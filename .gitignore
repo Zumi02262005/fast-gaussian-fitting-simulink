@@ -1,0 +1,67 @@
+# Autosave files
+*.asv
+*.m~
+*.autosave
+*.slx.r*
+*.mdl.r*
+# Derived content-obscured files
+*.p
+# Compiled MEX files
+*.mex*
+# Packaged app and toolbox files
+*.mlappinstall
+*.mltbx
+# Deployable archives
+*.ctf
+# Generated helpsearch folders
+helpsearch*/
+# Code generation folders
+slprj/
+sccprj/
+codegen/
+# Cache files
+*.slxc
+# Cloud based storage dotfile
+.MATLABDriveTag
+# buildtool cache folder
+.buildtool/
+# SimBiology backup files
+*.sbproj.backup
+*.sbproj.bak
+
+# ---------- Added for this project ----------
+# Extra Simulink generated-code folders
+*_ert_rtw/
+*_grt_rtw/
+*_sil_rtw/
+*_pil_rtw/
+
+# MATLAB Project machine-specific metadata
+resources/project/
+
+# Crash and diagnostic dumps
+matlab_crash_dump.*
+java.log.*
+
+# Raw sweep outputs (regenerate from experiments/)
+results/raw/*
+!results/raw/.gitkeep
+
+# Cross-compile output (regenerate from embedded/)
+embedded/build/*
+!embedded/build/.gitkeep
+
+# Exported figures (uncomment if they get large)
+# results/figures/
+
+# macOS
+.DS_Store
+._*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Paper PDFs (copyright and size)
+docs/references/*.pdf
