@@ -36,9 +36,6 @@ codegen/
 *_sil_rtw/
 *_pil_rtw/
 
-# MATLAB Project machine-specific metadata
-resources/project/
-
 # Crash and diagnostic dumps
 matlab_crash_dump.*
 java.log.*
