@@ -5,7 +5,7 @@ function s = params_sweeps()
 s.snr.signal_e             = [1000 2000 5000 10000 20000 30000];    % list of signal levels (gives SNR range) source: derived from Wan et al.
 s.psf.sigma_px             = [0.5 0.7 1.0 1.5];    % list of PSF widths source: Wan et al.
 s.psf.model                = {'airy disk', 'moffat', 'gaussian'};    % list of PSF shape names source: Nahlik & Stys, Trujillo et al., Hagiwara & Kuwatani
-s.psf.moffatBeta           = [];
+s.psf.moffatBeta          = [1.5 2.5 5];                            % list of Moffat Beta values source: Trujillo et al.
 
 %% Objective 4: precision study
 s.precision.formats        = {'single', 'double', 'fixed'};    % e.g. names of the numeric formats you test

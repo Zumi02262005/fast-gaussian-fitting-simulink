@@ -3,14 +3,14 @@ function p = params_baseline()
 
 %% Sensor
 p.sensor.pixelPitch_um     = 5.5;   % source: Tang et al.
-p.sensor.roiSize_px        = 7;   % N for an NxN ROI, source: assumed
-p.sensor.adcBits           = 8;   % source: Tang et al.
-p.sensor.fullWell_e        = 13500;   % sets saturation, source: Wei et al.
-p.sensor.gain_eperDN       = 52.7;   % electrons per digital number, source: derived at Wei et al.
+p.sensor.roiSize_px        = 7;     % N for an NxN ROI, source: assumed
+p.sensor.adcBits           = 8;     % source: Tang et al.
+p.sensor.fullWell_e        = 13500; % sets saturation, source: Wei et al.
+p.sensor.gain_eperDN       = 52.7;  % electrons per digital number, source: derived at Wei et al.
 p.sensor.qe                = 0.6;   % quantum efficiency (0 to 1), source: Wei et al.
 
 %% Optics
-p.optics.focalLength_mm    = 42;   % source: Tang et al.
+p.optics.focalLength_mm    = 42;    % source: Tang et al.
 p.psf.model                = 'gaussian';
 p.psf.sigma_px             = 0.7;   % PSF width, source: Wei et al.
 % p.psf.<extra params for non-Gaussian shapes>
@@ -31,7 +31,7 @@ p.noise.enableDark         = true;
 p.noise.enableQuant        = true;
 
 %% Simulation
-p.sim.nTrials              = NaN;   % Monte Carlo trials per setting
+p.sim.nTrials              = 10000;   % Monte Carlo trials per setting
 p.sim.seed                 = 123;   % fixed for reproducibility
 
 %% Processor (cost estimates, fill in later)
