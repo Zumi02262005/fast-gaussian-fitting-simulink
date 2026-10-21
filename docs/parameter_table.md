@@ -15,7 +15,7 @@
     <tbody>
         <!-- Group 1: Sensor -->
         <tr>
-            <td rowspan="6" align="left" style="color: orange;"><strong>Sensor</strong></td>
+            <td rowspan="10" align="left" style="color: orange;"><strong>Sensor</strong></td>
             <td>Pixel Pitch</td>
             <td align="center"><em>a</em></td>
             <td align="left" style="color: cyan;">5.5</td>
@@ -41,7 +41,7 @@
         </tr>
         <tr>
             <td>Full-well Capacity</td>
-            <td align="center"></td>
+            <td align="center"><em>N<sub>well</sub></em></td>
             <td align="left" style="color: cyan;">13500</td>
             <td align="center">e<sup>-</sup></td>
             <td align="center">NaN</td>
@@ -53,15 +53,48 @@
             <td align="left" style="color: cyan;">52.7</td>
             <td align="center">e<sup>-</sup>/DN</td>
             <td align="center">NaN</td>
-            <td align="left">Electrons per Digital Number; Derived from Wei et al.</td>
+            <td align="left">Electrons per Digital Number;<em>N<sub>well</sub></em> / 2<sup>8</sup>
+             = 13500 / 2<sup>8</sup> = 52.7; Derived from Wei et al.</td>
         </tr>
         <tr>
-            <td>Quantum Efficiency</td>
+            <td>QE x Fill Factor</td>
             <td align="center"><em>η</em></td>
             <td align="left" style="color: cyan;">0.6</td>
             <td align="center">fraction</td>
             <td align="center">NaN</td>
-            <td align="left">Wei et al.</td>
+            <td align="left">Only Used for Magnitude Labels; Source: Wei et al.</td>
+        </tr>
+        <tr>
+            <td>Dark charge per exposure</td>
+            <td align="center"><em>n<sub>dark</sub></em></td>
+            <td align="left" style="color: cyan;">1.25</td>
+            <td align="center">e<sup>-</sup></td>
+            <td align="center">Nan</td>
+            <td align="left">Dark charge per exposure = D<sub>e</sub> x t = 125 x 0.1s = 12.5 e<sup>-</sup>; Wei et al.</td>
+        </tr>
+        <tr>
+            <td>Black-level offset</td>
+            <td align="center"><em>n<sub>off</sub></em></td>
+            <td align="left" style="color: cyan;">TO BE FILLED</td>
+            <td align="center">DN</td>
+            <td align="center">e<sup>-</sup></td>
+            <td align="left">Nan</td>
+        </tr>
+        <tr>
+            <td>Rounding rule</td>
+            <td align="center"><em>Nan</em></td>
+            <td align="left" style="color: cyan;">TO BE FILLED  </td>
+            <td align="center">category</td>
+            <td align="center">Nan</td>
+            <td align="left">"floor" or "round to nearest"</td>
+        </tr>
+        <tr>
+            <td>ADC maximum code</td>
+            <td align="center"><em>DN<sub>max</sub></em></td>
+            <td align="left" style="color: cyan;">255</td>
+            <td align="center">DN</td>
+            <td align="center">Nan</td>
+            <td align="left">2<sup>8</sup> - 1 = 255</td>
         </tr>
         <!-- Group 2: Optics -->
         <tr>
@@ -71,7 +104,7 @@
             <td align="left" style="color: cyan;">42</td>
             <td align="center">mm</td>
             <td align="center">NaN</td>
-            <td align="left">Tang et al.</td>
+            <td align="left">The optics from Tang et al. is combined with Wei et al.'s detector</td>
         </tr>
         <tr>
             <td>PSF width</td>
@@ -79,7 +112,7 @@
             <td align="left" style="color: cyan;">0.7</td>
             <td align="center">pixels</td>
             <td align="center" style="color: cyan;">[0.5, 0.7, 1.0, 1.5]</td>
-            <td align="left">Wei et al.</td>
+            <td align="left">Baseline from Wei et al. Table 3 and Sweep range from Wan et al. 3.3.2</td>
         </tr>
         <tr>
             <td>PSF model</td>
@@ -105,7 +138,7 @@
             <td align="left" style="color: cyan;">Drawn Per Trial</td>
             <td align="center">pixels</td>
             <td align="center">NaN</td>
-            <td align="left">NaN</td>
+            <td align="left">Uniform within central pixel; Wan et al. 3.3</td>
         </tr>
         <!-- Group 4: Noise -->
         <tr>
@@ -123,7 +156,7 @@
             <td align="left" style="color: cyan;">13</td>
             <td align="center">e<sup>-</sup>rms</td>
             <td align="center">NaN</td>
-            <td align="left">Wei et al.</td>
+            <td align="left">Also called temporal noise; Wei et al.</td>
         </tr>
         <tr>
             <td>Exposure time</td>
