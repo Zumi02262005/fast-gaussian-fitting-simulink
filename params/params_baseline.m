@@ -48,7 +48,7 @@ p.psf.modelRule             = 'gaussian';  % 'gaussian', 'moffat' or 'airy'
 p.psf.sigma_px              = 0.7;    % PSF width (Gaussian radius = sigma); [Wei] Table 3
 p.psf.moffat_beta           = 2.5;    % [Trujillo]
 p.psf.fwhm_factor           = 2.355;  % FWHM = fwhm_factor * sigma, used to match PSF shapes; [Trujillo] Eq. A1
-p.psf.airy_width            = NaN;    % TBD: matched by FWHM, or from wavelength and f-number; [Nahlik]
+p.psf.airy_width            = 'fwhm';    % TBD: matched by FWHM, or from wavelength and f-number; [Nahlik]
 p.psf.subpixel_grid_n       = NaN;    % decision; sub-points per pixel side (M), Moffat and Airy only
 % Pixel integration follows [Wei] Eq. 6. Choose M by comparing Gaussian sub-grid
 % integration against the exact erf values.

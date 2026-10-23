@@ -1,5 +1,5 @@
 function I = generate_psf(dx, dy, p)
-% GENERATE_PSF  PSF intensity at offsets (dx, dy) from the true centroid.
+%% GENERATE_PSF  PSF intensity at offsets (dx, dy) from the true centroid.
 %
 %   I = generate_psf(dx, dy, p)
 %
@@ -20,42 +20,45 @@ function I = generate_psf(dx, dy, p)
 %   References: [Wan] Eq. 22 (Gaussian spot), [Trujillo] Eq. A1 (Moffat),
 %   [Nahlik] (Airy disk). Tags are listed in params_baseline.
 
-% ---- Input checks ----------------------------------------------------------
-% TODO: check that dx and dy have the same size (error if not)
-% TODO: check that p.psf.sigma_px is positive
+%% ---- Input checks ----------------------------------------------------------
+if ~isequal(size(dx), size(dy))
+    error('generate_psf:sizeMismatch', 'dx and dy must have the same size.');
+end
+if ~isfield(p.psf, 'sigma_px') || ~isscalar(p.psf.sigma_px) || ~(p.psf.sigma_px > 0)
+    error('generate_psf:invalidSigma', 'p.psf.sigma_px must be a positive scalar.');
+end
 
 % ---- Shared width ----------------------------------------------------------
-% TODO: compute the target FWHM in pixels from p.psf.fwhm_factor and p.psf.sigma_px
-fwhm_px = NaN;
+fwhm_px = p.psf.fwhm_factor * p.psf.sigma_px;
 
-% Radial distance from the centre (all three models are circularly symmetric)
-% TODO: compute r (same size as dx) from dx and dy
-r = NaN(size(dx));
+r = hypot(dx, dy);
 
 % ---- Model-specific intensity ----------------------------------------------
 switch lower(p.psf.modelRule)
     case 'gaussian'
-        % TODO: 2D circular Gaussian with standard deviation p.psf.sigma_px
-        % TODO: choose the normalization constant so the plane integral = 1
-        %       (hint: work out the integral of exp(-r^2 / (2 sigma^2)) over the plane)
-        I = NaN(size(dx));
+        sigma_px = p.psf.sigma_px;
+        I = exp(-r.^2/(2*sigma_px^2))/(2*pi*sigma_px^2);
 
     case 'moffat'
-        % TODO: read beta from p.psf.moffat_beta
-        % TODO: convert the target FWHM into Moffat's width parameter alpha
-        %       ([Trujillo] Eq. A1 gives FWHM in terms of alpha and beta - invert it)
-        % TODO: write the Moffat profile and its normalization for the plane
-        % NOTE: normalization only converges for beta > 1; error if beta <= 1
-        I = NaN(size(dx));
+        moffat_beta = p.psf.moffat_beta;
+        if ~isscalar(moffat_beta) || ~(moffat_beta > 1)
+            error('generate_psf:invalidMoffatBeta', ...
+                'p.psf.moffat_beta must be a scalar greater than 1.');
+        end
+        moffat_alpha = fwhm_px / (2 * sqrt(2^(1/moffat_beta) - 1));   % [Trujillo] Eq. A1, solved for alpha
+        I = (moffat_beta - 1) / (pi * moffat_alpha^2) .* ...
+            (1 + (r ./ moffat_alpha).^2).^(-moffat_beta);
 
     case 'airy'
-        % TODO: error with a clear message if p.psf.airy_width is still NaN (decision open)
-        % TODO: convert the target FWHM into the Airy scale (first-zero radius
-        %       or lambda*N) using the FWHM of the Airy pattern ([Nahlik])
-        % TODO: write the Airy intensity using the Bessel function besselj(1, .)
-        % TODO: handle r = 0 separately (0/0 at the centre; use the limit value)
-        % TODO: normalize so the plane integral = 1
-        I = NaN(size(dx));
+        % FWHM-matched Airy: [2 J1(x)/x]^2 is half its peak at x = 1.6163 (Profile is from [Nahlik]
+        % Eq. 1 and that 1.6163 is the half max of [2J, (x)/x]^2 which can be verified with fzero),
+        % and that x sits at r = FWHM/2.
+        airy_k = 2 * 1.616339948310703 / fwhm_px;     % 1/px
+        x = airy_k * r;
+        I = ones(size(r));                            % limit of [2 J1(x)/x]^2 at x = 0 is 1
+        nz = x ~= 0;
+        I(nz) = (2 * besselj(1, x(nz)) ./ x(nz)).^2;
+        I = I * airy_k^2 / (4 * pi);                  % plane integral = 1
 
     otherwise
         error('generate_psf:unknownModel', ...
