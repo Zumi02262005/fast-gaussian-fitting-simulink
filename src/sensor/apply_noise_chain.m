@@ -41,28 +41,41 @@ if any(isnan(requiredValues)) || any(cellfun(@isempty, {p.sensor.roundRule, p.no
     error('apply_noise_chain:UnsetParameter', 'Required noise and sensor parameters must be set.');
 end
 
-% TODO: error if fpnRule or prnuRule is not 'random' (the only mode written so far)
+if ~strcmp(p.noise.fpnRule, 'random') || ~strcmp(p.noise.prnuRule, 'random')
+    error('apply_noise_chain:UnsupportedRule', ...
+        'Only random FPN and PRNU rules are supported.');
+end
 
 % ---- 1. Dark charge and background (expected electrons per pixel) ----------
 % TODO: dark = p.noise.dark_e (already dark current x exposure in params_baseline)
 % TODO: apply p.noise.enableDark (dark = 0 if disabled)
 % TODO: light = img_e + p.noise.bg_level_e     (light = what PRNU scales)
+dark = p.noise.dark_e * p.noise.enableDark;
+light = img_e + p.noise.bg_level_e;
 
 % ---- 2. PRNU (prnuRule = 'random') -----------------------------------------
 % TODO: build a new N-by-N multiplier this call: 1 + p.noise.prnu * (standard normal)
 %       (p.noise.prnu = 0 gives all ones, i.e. PRNU off)
 % TODO: expected = light .* multiplier + dark  (PRNU scales light, not dark charge)
+prnuMultiplier = 1 + p.noise.prnu * randn(N, N);
+expected = light .* prnuMultiplier + dark;
 
 % ---- 3. Shot noise ---------------------------------------------------------
 % TODO: if p.noise.enableShot, replace each expected count with a Poisson draw
 %       of that mean (poissrnd); otherwise keep the expected value
 % NOTE: poissrnd needs the Statistics and Machine Learning Toolbox; if you don't
 %       have it, note this and decide on an alternative
+if p.noise.enableShot
+    collectedElectrons = poissrnd(max(expected, 0));
+else
+    collectedElectrons = expected;
+end
 
 % ---- 4. Full-well clip -----------------------------------------------------
 % TODO: clip the collected electrons above p.sensor.full_well_e
 %       (physically the well fills before readout, so this comes right after
 %       the Poisson draw and before read noise and FPN are added)
+collectedElectrons = min(collectedElectrons, p.sensor.full_well_e);
 
 % ---- 5. FPN and read noise (fpnRule = 'random') -----------------------------
 % TODO: add FPN: a new N-by-N Gaussian offset map this call, std p.noise.fpn_e
@@ -71,17 +84,29 @@ end
 %       p.noise.read_noise_e to every pixel
 % NOTE: values can now go slightly above full well or below 0; that is real
 %       readout behaviour. The black level and the ADC clip in steps 6-7 handle it.
-img_e_noisy = NaN(N, N);   % TODO: replace with the result of steps 1-5
+fpnOffset = p.noise.fpn_e * randn(N, N);
+readNoise = p.noise.read_noise_e * randn(N, N) * p.noise.enableRead;
+img_e_noisy = collectedElectrons + fpnOffset + readNoise;
 
 % ---- 6. Gain, black level, rounding ----------------------------------------
 % TODO: convert electrons to DN: divide by p.sensor.gain_e_per_DN
 % TODO: add p.sensor.black_level_DN
 % TODO: if p.noise.enableQuant, round using p.sensor.roundRule ('round' -> round,
 %       'floor' -> floor); if disabled, keep the continuous value (validation only)
+dnContinuous = img_e_noisy / p.sensor.gain_e_per_DN + p.sensor.black_level_DN;
+if p.noise.enableQuant
+    if strcmp(p.sensor.roundRule, 'round')
+        dnContinuous = round(dnContinuous);
+    elseif strcmp(p.sensor.roundRule, 'floor')
+        dnContinuous = floor(dnContinuous);
+    else
+        error('apply_noise_chain:roundRule', 'Unknown roundRule "%s". Use round or floor.', p.sensor.roundRule);
+    end
+end
 
 % ---- 7. ADC clip -----------------------------------------------------------
 % TODO: clip to the range 0 to p.sensor.adc_max_DN
-img_DN = NaN(N, N);        % TODO: replace with the final image
+img_DN = min(max(dnContinuous, 0), p.sensor.adc_max_DN);
 
 % ---- Reminder for the processing stage -------------------------------------
 % The centroiders expect the black level and background removed. Do that in the
