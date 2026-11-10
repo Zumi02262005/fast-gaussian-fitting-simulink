@@ -54,12 +54,27 @@ switch lower(p.detect.snrRule)
         %       (or reuse p.noise.noise_floor_e^2, which already holds dark + read + FPN + quant)
         %       Careful not to count dark charge twice if you reuse noise_floor_e.
         % TODO: snr = s2nd_e / sqrt(total variance)
-        snr = NaN;
+        dark_e        = p.noise.dark_e * p.noise.enableDark;
+        shotVariance  = p.noise.enableShot * (s2nd_e + p.noise.bg_level_e + dark_e);
+        prnuVariance  = (p.noise.prnu * (s2nd_e + p.noise.bg_level_e))^2;
+        readVariance  = p.noise.enableRead  * p.noise.read_noise_e^2;
+        fpnVariance   = p.noise.fpn_e^2;
+        quantVariance = p.noise.enableQuant * p.sensor.gain_e_per_DN^2 / 12;
+        totalVariance = shotVariance + prnuVariance + readVariance + fpnVariance + quantVariance;
+        snr = s2nd_e / sqrt(totalVariance);
 
     case 'integrated'
         % TODO: total signal in the ROI divided by sqrt(total noise variance in the ROI)
+        dark_e        = p.noise.dark_e * p.noise.enableDark;
+        shotVariance  = p.noise.enableShot * (img_e + p.noise.bg_level_e + dark_e);
+        prnuVariance  = (p.noise.prnu * (img_e + p.noise.bg_level_e)).^2;
+        readVariance  = p.noise.enableRead  * p.noise.read_noise_e^2;
+        fpnVariance   = p.noise.fpn_e^2;
+        quantVariance = p.noise.enableQuant * p.sensor.gain_e_per_DN^2 / 12;
+        totalSignal = sum(img_e(:));
+        totalVariance = sum(shotVariance + prnuVariance + readVariance + fpnVariance + quantVariance, 'all');
+        snr = totalSignal / sqrt(totalVariance);
         % NOTE: this one does not change with sub-pixel position
-        snr = NaN;
 
     otherwise
         error('compute_snr:unknownRule', ...
