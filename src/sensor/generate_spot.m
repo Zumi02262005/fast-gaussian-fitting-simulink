@@ -28,44 +28,57 @@ function [img_e, xc, yc] = generate_spot(p, xc, yc)
 N = p.sensor.roi_size_px;
 S = p.star.signal_e;
 
-% ---- Check decisions are made ----------------------------------------------
-% TODO: error with a clear message if p.sensor.pixelCoordRule is empty
+% ---- Error Detection ----------------------------------------------
+if isempty(p.sensor.pixelCoordRule)
+    error('generate_spot:pixelCoordRuleEmpty', 'pixelCoordRule should not be empty');
+end
 
 % ---- True centroid ---------------------------------------------------------
+
 if nargin < 3
-    % TODO: compute the centre coordinate of the central pixel
-    % TODO: draw xc and yc uniformly within that pixel (+/- 0.5 px), [Wan] Sec. 3.3
-    xc = NaN;
-    yc = NaN;
+    % DN = symsum(symsum(image(x, y), x, N/N, N), y, N/N, N);
+    % xc = symsum(symsum(((x * image(x, y))/(DN)), x, N/N, N), y, N/N, N);
+    % yc = symsum(symsum(((y * image(x, y))/(DN)), y, N/N, N), x, N/N, N);
+    xc = (N + 1) / 2;
+    yc = (N + 1) / 2;
 end
 
 % ---- Pixel edges -----------------------------------------------------------
-% TODO: build vectors of left/right x edges and lower/upper y edges for all N pixels
-%       (from the coordinate convention above)
 
 img_e = zeros(N, N);
+v_center = 1:N;
+x_left = v_center - 0.5;
+x_right = v_center + 0.5;
+y_low = v_center - 0.5;
+y_high = v_center + 0.5;
 
 % ---- Fraction of the PSF falling on each pixel ([Wei] Eq. 6) ----------------
 switch lower(p.psf.modelRule)
     case 'gaussian'
         % Exact method: the 2D Gaussian separates into x and y parts, so the
         % fraction on a pixel = (fraction in its x range) * (fraction in its y range).
-        % TODO: write the 1D fraction between two edges using erf
-        %       (the Gaussian CDF; offsets are measured from xc or yc)
-        % TODO: form the N-by-N fraction matrix from the x and y fractions
-        %       (hint: an outer product of two vectors; rows = y, columns = x)
-        % TODO: img_e = S * fraction matrix
+        sigma = p.psf.sigma_px;
+        xFraction = 0.5 * (erf((x_right - xc)/(sigma*sqrt(2))) - erf((x_left - xc)/(sigma*sqrt(2))));
+        yFraction = 0.5 * (erf((y_high - yc)/(sigma*sqrt(2))) - erf((y_low - yc)/(sigma*sqrt(2))));
+        fraction = yFraction(:) * xFraction;
+        img_e = S * fraction;
 
     case {'moffat', 'airy'}
         % No closed form, so average generate_psf over a fine sub-grid in each pixel.
         g = p.psf.subpixel_grid_n;   % sub-points per pixel side (M)
-        % TODO: error if g is NaN (decision not made yet)
-        % TODO: build sub-point offsets inside one pixel (g points per side,
-        %       centred in g equal sub-cells, not on the pixel edges)
-        % TODO: for each pixel, evaluate generate_psf at its sub-points
-        %       (dx = x_sub - xc, dy = y_sub - yc), average, and multiply by
-        %       the pixel area (1 px^2) to get the fraction on that pixel
-        % TODO: img_e = S * fraction matrix
+        if ~isscalar(g) || isnan(g) || g < 1 || g ~= floor(g)
+            error('generate_spot:invalidSubpixelGrid', ...
+                'subpixel_grid_n must be a positive integer.');
+        end
+        offsets = ((1:g) - 0.5) / g - 0.5;
+        fraction = zeros(N, N);
+        for row = 1:N
+            for col = 1:N
+                [dx, dy] = meshgrid((v_center(col) - xc) + offsets, (row - yc) + offsets);
+                fraction(row, col) = mean(generate_psf(dx, dy, p), 'all');
+            end
+        end
+        img_e = S * fraction;
         % NOTE: loops over the N^2 pixels are fine here; vectorize later only if slow
 
     otherwise

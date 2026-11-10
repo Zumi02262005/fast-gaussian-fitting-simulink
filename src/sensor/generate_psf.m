@@ -19,7 +19,6 @@ function I = generate_psf(dx, dy, p)
 %
 %   References: [Wan] Eq. 22 (Gaussian spot), [Trujillo] Eq. A1 (Moffat),
 %   [Nahlik] (Airy disk). Tags are listed in params_baseline.
-
 %% ---- Input checks ----------------------------------------------------------
 if ~isequal(size(dx), size(dy))
     error('generate_psf:sizeMismatch', 'dx and dy must have the same size.');
@@ -45,12 +44,14 @@ switch lower(p.psf.modelRule)
             error('generate_psf:invalidMoffatBeta', ...
                 'p.psf.moffat_beta must be a scalar greater than 1.');
         end
-        moffat_alpha = fwhm_px / (2 * sqrt(2^(1/moffat_beta) - 1));   % [Trujillo] Eq. A1, solved for alpha
+        moffat_alpha = fwhm_px / (2 * sqrt(2^(1/moffat_beta) - 1));   % FWHM-alpha relation, [Trujillo] text after Eq. 1
         I = (moffat_beta - 1) / (pi * moffat_alpha^2) .* ...
             (1 + (r ./ moffat_alpha).^2).^(-moffat_beta);
 
     case 'airy'
-        % FWHM-matched Airy: [2 J1(x)/x]^2 is half its peak at x = 1.6163 (Profile is from [Nahlik]
+        % Profile [2 J1(x)/x]^2 from [Nahlik] Eq. 1. It falls to half its peak at
+        % x = 1.6163 (check: fzero(@(x)(2*besselj(1,x)/x)^2 - 0.5, 1.6)), and that
+        % point is placed at r = FWHM/2 so the FWHM matches the other shapes.
         % Eq. 1 and that 1.6163 is the half max of [2J, (x)/x]^2 which can be verified with fzero),
         % and that x sits at r = FWHM/2.
         airy_k = 2 * 1.616339948310703 / fwhm_px;     % 1/px
@@ -62,7 +63,7 @@ switch lower(p.psf.modelRule)
 
     otherwise
         error('generate_psf:unknownModel', ...
-              'Unknown PSF model "%s". Use gaussian, moffat or airy.', p.psf.modelRule);
+            'Unknown PSF model "%s". Use gaussian, moffat or airy.', p.psf.modelRule);
 end
 
 % ---- Self-check ideas (put these in tests/test_psf.m, not here) -------------

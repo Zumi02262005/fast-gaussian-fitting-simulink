@@ -1,3 +1,5 @@
+clear;
+close all;
 % CHECK_PSF_SHAPES  Numeric checks and figures for generate_psf.
 %
 % Run from the project root (with src/ and params/ on the path):
@@ -75,14 +77,14 @@ fprintf(['Integral below 1 for Moffat b=1.5 and Airy is light beyond +/-10 px, n
         p.sensor.roi_size_px, p.sensor.roi_size_px);
 
 % ---- Figure 1: 2D images ---------------------------------------------------
-view = abs(x) <= 4;                   % show +/-4 px
+inView = abs(x) <= 4;                  % show +/-4 px
 figure('Name', 'PSF shapes (2D)', 'Color', 'w');
 tl = tiledlayout(1, nShapes, 'TileSpacing', 'compact');
 title(tl, sprintf('PSF shapes, \\sigma = %.1f px (FWHM %.2f px), %dx%d ROI outlined', ...
       p.psf.sigma_px, fwhmTarget, p.sensor.roi_size_px, p.sensor.roi_size_px));
 for k = 1:nShapes
     nexttile;
-    imagesc(x(view), x(view), images{k}(view, view));
+    imagesc(x(inView), x(inView), images{k}(inView, inView));
     axis image; set(gca, 'YDir', 'normal');
     colorbar;
     hold on;
@@ -121,3 +123,35 @@ hold off; grid on; xlim([0 10]); ylim([1e-7 1]);
 xlabel('r (px)'); ylabel('Intensity (1/px^2), log');
 title('Log scale: wings and Airy rings');
 legend(labels, 'Location', 'northeast');
+
+% PLOT_PSF_3D  3D surface plots of each PSF shape (sigma from params_baseline).
+p = params_baseline();
+step = 0.05;                                   % px; finer = smoother surface, slower
+x = -4:step:4;
+[X, Y] = meshgrid(x, x);
+
+shapes = {'gaussian', NaN; 'moffat', 1.5; 'moffat', 2.5; 'moffat', 5; 'airy', NaN};
+fig = figure('Name', 'PSF shapes (3D)', 'Color', 'w', 'Position', [100 100 1500 400]);
+if exist('theme', 'file') || exist('theme', 'builtin'), theme(fig, 'light'); end
+tiledlayout(1, size(shapes, 1), 'TileSpacing', 'compact');
+
+for k = 1:size(shapes, 1)
+    q = p;
+    q.psf.modelRule = shapes{k, 1};
+    if ~isnan(shapes{k, 2}), q.psf.moffat_beta = shapes{k, 2}; end
+    I = generate_psf(X, Y, q);
+
+    nexttile;
+    surf(X, Y, I, 'EdgeColor', 'none');        % solid surface, no grid lines
+    shading interp;                            % smooth colour between points
+    colormap(parula);
+    view(-35, 30);                             % azimuth, elevation (degrees)
+    camlight headlight; lighting gouraud;      % shading so the 3D shape reads clearly
+    zlim([0 0.35]);                            % same height scale for every shape
+    xlabel('x (px)'); ylabel('y (px)'); zlabel('Intensity (1/px^2)');
+    if isnan(shapes{k, 2})
+        title(shapes{k, 1});
+    else
+        title(sprintf('moffat \\beta=%g', shapes{k, 2}));
+    end
+end

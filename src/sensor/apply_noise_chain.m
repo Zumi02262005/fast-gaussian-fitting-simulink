@@ -36,6 +36,11 @@ N = size(img_e, 1);
 % TODO: error with a clear message if any of these are unset (NaN or ''):
 %       p.noise.bg_level_e, p.sensor.black_level_DN, p.sensor.roundRule,
 %       p.noise.fpnRule, p.noise.prnuRule
+requiredValues = [p.noise.bg_level_e, p.sensor.black_level_DN];
+if any(isnan(requiredValues)) || any(cellfun(@isempty, {p.sensor.roundRule, p.noise.fpnRule, p.noise.prnuRule}))
+    error('apply_noise_chain:UnsetParameter', 'Required noise and sensor parameters must be set.');
+end
+
 % TODO: error if fpnRule or prnuRule is not 'random' (the only mode written so far)
 
 % ---- 1. Dark charge and background (expected electrons per pixel) ----------
