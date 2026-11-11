@@ -118,6 +118,7 @@ p.detect.min_signal_e        = s2nd_e / p.detect.eta;  % ~2,430 e-: faintest det
 % treat them as a stress case, not a normal faint star.
 
 %% Centroiding
+p.centroid.wcgWeightRule     = 'intensity';
 p.centroid.fgf_T             = 3;     % Fast GF keeps pixels with estimated SNR > T; [Wan] Eq. 21, Sec. 3.2
 % phi(r) stays within (0.81, 1.15) for SNR > 3; [Wan] Eq. 11, Fig. 2.
 p.centroid.fgf_min_px        = 5;     % Fast GF needs at least this many pixels; [Wan] Sec. 2.4, Sec. 3.2
