@@ -124,7 +124,7 @@ p.centroid.fgf_min_px        = 5;     % Fast GF needs at least this many pixels;
 p.centroid.gfInitGuessRule   = '';    % decision: e.g. 'cg' (use the CG result)
 p.centroid.gf_tol_px         = NaN;   % decision; standard GF stopping tolerance (e.g. 1e-6 px)
 p.centroid.gf_max_iter       = NaN;   % decision; standard GF iteration limit (e.g. 50)
-p.centroid.negPixelRule      = '';    % decision: 'clip' or 'keep', same for CG and WCG
+p.centroid.negPixelRule      = 'clip';    % decision: 'clip' or 'keep', same for CG and WCG
 
 %% Supervisor (thresholds tuned from Stage 5 results)
 p.supervisor.snr_switch      = NaN;   % estimated SNR below which the supervisor falls back from Fast GF ([Wan] Eq. 19-20)
