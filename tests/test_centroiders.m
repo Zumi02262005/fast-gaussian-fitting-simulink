@@ -35,8 +35,9 @@ rng(p0.sim.seed);
 
 % ---- Methods under test and their expected noise-free values ---------------
 %            handle  name   x-shift error  max|err| s0.3  max|err| s1.5  line
-centroiders = { @cg,    'CG',  0,             0.054,         0.068,         '-';
-            @wcg,   'WCG', -0.011,        0.197,         0.007,         '--' };
+centroiders = { @cg,      'CG',  0,       0.054,  0.068,   '-';
+                @wcg,     'WCG', -0.011,  0.197,  0.007,   '--';
+                @fast_gf, 'FGF', 0.0008,  0.031,  0.00001, ':' };
 nM = size(centroiders, 1);
 
 fprintf('\n==== Stage 4: subtract_background and centroiders ====\n');

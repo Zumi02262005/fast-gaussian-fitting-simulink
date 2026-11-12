@@ -107,7 +107,7 @@ p.detect.mag0_e              = p.detect.tau_atm * p.optics.transmittance * p.det
 % Label any signal S with a magnitude: Mv = -2.5 * log10(S / mag0_e).
 
 % Detection magnitude, [Wei] Eq. 9 (solves [Wei] Eq. 8 for the faintest detectable star):
-p.detect.eta                 = 0.0831;  % second-type pixel share of mu_0 for a static star (trail length 0); [Wei] Table 2
+p.detect.eta                 = 0.113;  % second-type pixel share of mu_0 for a static star (trail length 0); [Wei] Table 2
 V  = p.detect.detect_threshold;
 P  = p.noise.prnu;
 R2 = p.noise.noise_floor_e^2;           % n_DC^2 + n_TN^2 + n_FPN^2 + n_ADC^2
@@ -119,6 +119,7 @@ p.detect.min_signal_e        = s2nd_e / p.detect.eta;  % ~2,430 e-: faintest det
 
 %% Centroiding
 p.centroid.wcgWeightRule     = 'intensity';
+p.centroid.fgfInitRule       = 'box3';
 p.centroid.fgf_T             = 3;     % Fast GF keeps pixels with estimated SNR > T; [Wan] Eq. 21, Sec. 3.2
 % phi(r) stays within (0.81, 1.15) for SNR > 3; [Wan] Eq. 11, Fig. 2.
 p.centroid.fgf_min_px        = 5;     % Fast GF needs at least this many pixels; [Wan] Sec. 2.4, Sec. 3.2
