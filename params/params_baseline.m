@@ -123,9 +123,13 @@ p.centroid.fgfInitRule       = 'box3';
 p.centroid.fgf_T             = 3;     % Fast GF keeps pixels with estimated SNR > T; [Wan] Eq. 21, Sec. 3.2
 % phi(r) stays within (0.81, 1.15) for SNR > 3; [Wan] Eq. 11, Fig. 2.
 p.centroid.fgf_min_px        = 5;     % Fast GF needs at least this many pixels; [Wan] Sec. 2.4, Sec. 3.2
-p.centroid.gfInitGuessRule   = '';    % decision: e.g. 'cg' (use the CG result)
-p.centroid.gf_tol_px         = NaN;   % decision; standard GF stopping tolerance (e.g. 1e-6 px)
-p.centroid.gf_max_iter       = NaN;   % decision; standard GF iteration limit (e.g. 50)
+p.centroid.gfSolverRule      = 'lm';     % Levenberg-Marquardt; [Wan] Sec. 2.2, ref. [18]
+p.centroid.gfInitGuessRule   = 'wcg';    % centre from wcg, A = brightest pixel
+p.centroid.gf_tol_px         = 1e-6;     % stop when the centroid step is below this
+p.centroid.gf_max_iter       = 50;       % runaway guard (typical: 4-13 iterations)
+p.centroid.gf_lambda0        = 1e-3;     % starting LM damping
+p.centroid.gf_lambda_factor  = 10;       % damping divided / multiplied by this per step
+p.centroid.gf_sigma0_px      = 1;        % starting width guess (processor doesn't know sigma)
 p.centroid.negPixelRule      = 'clip';    % decision: 'clip' or 'keep', same for CG and WCG
 
 %% Supervisor (thresholds tuned from Stage 5 results)

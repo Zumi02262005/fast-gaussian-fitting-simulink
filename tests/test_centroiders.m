@@ -10,19 +10,23 @@
 % runMethod, runs the full pipeline for any of them. To add GF or Fast GF,
 % add a row to the centroiders table below with its expected values.
 %
-% Expected values come from an independent calculation (Gaussian PSF, 7x7 ROI,
-% sigma 0.7 unless stated, true offset +0.3 px in x, negPixelRule = 'clip'):
-%                              CG        WCG (W = I, [Wan] Eq. 2)
-%   x shift +0.3, noise-free   ~0        -0.011 px
-%   max |err|, sigma 0.3       0.054     0.197 px  (S-curve: squaring sharpens the spot)
-%   max |err|, sigma 1.5       0.068     0.007 px  (truncation: squaring suppresses the edge)
-%   noisy, S = 5,000 e-        bias -0.04, std 0.06   bias -0.014, std 0.026
-%   noisy, S = 1,000 e-        bias -0.14, std 0.20   bias -0.065, std 0.155
+% Expected noise-free values come from an independent calculation (Gaussian PSF,
+% 7x7 ROI, sigma 0.7 unless stated, negPixelRule = 'clip', FGF with 'box3'):
+%                              CG       WCG (W = I, [Wan] Eq. 2)   FGF ([Wan] Sec. 2.4)
+%   x shift +0.3 error         ~0       -0.011 px                  +0.0008 px
+%   max |err|, sigma 0.3       0.054    0.197 px (S-curve)         0.031 px
+%   max |err|, sigma 1.5       0.068    0.007 px (truncation)      ~0.00001 px
+%
+% Figures 2 and 3 use sigma = sigmaScatter (0.5) and S = levels (25,000 and
+% 5,000 e-): narrow, bright spots, where FGF beats both CG and WCG. Expected
+% for a true offset of +0.3 px in x (noisy):
+%   WCG stuck near -0.07 px bias at both levels (its S-curve floor at sigma 0.5)
+%   CG  small bias, wider spread; FGF ~0 bias, tightest spread
 %
 % Figures
 %   1. Noise-free error vs true x offset, for several PSF widths
-%      (CG solid, WCG dashed, same colour per sigma)
-%   2. One ROI (noise-free and noisy) with the true and estimated centroids
+%      (CG solid, WCG dashed, FGF dotted, same colour per sigma)
+%   2. One ROI per signal level (noise-free and noisy) with true and estimated centroids
 %   3. Noisy Monte Carlo scatter at a fixed true position, per method and signal level
 
 p0 = params_baseline();
@@ -37,8 +41,12 @@ rng(p0.sim.seed);
 %            handle  name   x-shift error  max|err| s0.3  max|err| s1.5  line
 centroiders = { @cg,      'CG',  0,       0.054,  0.068,   '-';
                 @wcg,     'WCG', -0.011,  0.197,  0.007,   '--';
-                @fast_gf, 'FGF', 0.0008,  0.031,  0.00001, ':' };
+                @fast_gf, 'FGF', 0.0008,  0.031,  0.00001, ':' ;
+                @gauss_fit_std, 'GF', 0.0008, 0.031, 0.00001, '-.'};
+q = noiseOff(p0);
 nM = size(centroiders, 1);
+sigmaScatter = 0.5;            % narrow spot: where FGF wins (Figures 2 and 3)
+levels       = [25000 5000];   % signal levels for Figures 2 and 3 (e-)
 
 fprintf('\n==== Stage 4: subtract_background and centroiders ====\n');
 
@@ -52,7 +60,6 @@ fprintf('%-34s %9.4f DN (expect ~0)\n', 'Dark frame mean after subtraction', mea
 assert(abs(mean(R, 'all')) < 0.02, 'Background not removed correctly');
 
 %% 2. Noise-free checks, every method
-q = noiseOff(p0);
 for m = 1:nM
     f = centroiders{m, 1};  name = centroiders{m, 2};  expShift = centroiders{m, 3};
     fprintf('\n-- %s --\n', name);
@@ -112,55 +119,59 @@ yline(0, ':');
 hold off; grid on;
 xlabel('True x offset from pixel centre (px)');
 ylabel('Error, estimate - true (px)');
-title('Noise-free bias vs sub-pixel position (Gaussian PSF, 7x7 ROI): CG solid, WCG dashed');
+title('Noise-free bias vs sub-pixel position (Gaussian PSF, 7x7 ROI): CG solid, WCG dashed, FGF dotted');
 legend(hLeg, legText, 'Location', 'eastoutside');
 
-%% Figure 2: one ROI, noise-free and noisy, with true and estimated centroids
+%% Figure 2: one ROI per signal level, noise-free and noisy, with true and estimated centroids
 xt = c + 0.3;  yt = c - 0.2;
-img_e = generate_spot(p0, xt, yt);
-roiClean = subtract_background(apply_noise_chain(img_e, q), q);
-roiNoisy = subtract_background(apply_noise_chain(img_e, p0), p0);
-rois    = {roiClean, roiNoisy};
 names2  = {'Noise-free', 'Noisy'};
 markers = {'rx', 'co', 'ms', 'y^'};          % one marker per method
 
-fig2 = figure('Name', 'Centroiders on one ROI', 'Color', 'w', 'Position', [100 100 1000 450]);
+fig2 = figure('Name', 'Centroiders on one ROI', 'Color', 'w', ...
+              'Position', [100 50 1000 450 * numel(levels)]);
 setLightTheme(fig2);
-tl = tiledlayout(1, 2, 'TileSpacing', 'compact');
-title(tl, sprintf('One star (\\sigma = %.1f px, S = %d e^-), true centroid (%.1f, %.1f)', ...
-      p0.psf.sigma_px, p0.star.signal_e, xt, yt));
-for k = 1:2
-    nexttile;
-    imagesc(1:N, 1:N, rois{k});
-    axis image; colormap(gca, gray); cb = colorbar; cb.Label.String = 'DN';
-    hold on;
-    plot(xt, yt, 'g+', 'MarkerSize', 14, 'LineWidth', 2);
-    errText = {};
-    for m = 1:nM
-        [xe, ye] = centroiders{m, 1}(rois{k}, p0);
-        plot(xe, ye, markers{m}, 'MarkerSize', 12, 'LineWidth', 2);
-        errText{end + 1} = sprintf('%s (%.3f, %.3f)', centroiders{m, 2}, xe - xt, ye - yt); %#ok<SAGROW>
+tl = tiledlayout(numel(levels), 2, 'TileSpacing', 'compact');
+title(tl, sprintf('One star per signal level (\\sigma = %.1f px), true centroid (%.1f, %.1f)', ...
+      sigmaScatter, xt, yt));
+for j = 1:numel(levels)
+    pj = p0;  pj.star.signal_e = levels(j);  pj.psf.sigma_px = sigmaScatter;
+    qj = q;   qj.star.signal_e = levels(j);  qj.psf.sigma_px = sigmaScatter;
+    img_e = generate_spot(pj, xt, yt);
+    rois  = {subtract_background(apply_noise_chain(img_e, qj), qj), ...
+             subtract_background(apply_noise_chain(img_e, pj), pj)};
+    for k = 1:2
+        nexttile;
+        imagesc(1:N, 1:N, rois{k});
+        axis image; colormap(gca, gray); cb = colorbar; cb.Label.String = 'DN';
+        hold on;
+        plot(xt, yt, 'g+', 'MarkerSize', 14, 'LineWidth', 2);
+        errText = {};
+        for m = 1:nM
+            [xe, ye] = centroiders{m, 1}(rois{k}, pj);
+            plot(xe, ye, markers{m}, 'MarkerSize', 12, 'LineWidth', 2);
+            errText{end + 1} = sprintf('%s (%.3f, %.3f)', centroiders{m, 2}, xe - xt, ye - yt); %#ok<SAGROW>
+        end
+        hold off;
+        title({sprintf('%s, S = %d e^-', names2{k}, levels(j)), ['error: ' strjoin(errText, ', ')]});
+        xlabel('x (column, px)'); ylabel('y (row, px)');
     end
-    hold off;
-    title({names2{k}, ['error: ' strjoin(errText, ', ')]});
-    xlabel('x (column, px)'); ylabel('y (row, px)');
-    legend([{'True'}, centroiders(:, 2)'], 'Location', 'southoutside', 'Orientation', 'horizontal');
 end
+lg2 = legend([{'True'}, centroiders(:, 2)'], 'Orientation', 'horizontal');
+lg2.Layout.Tile = 'south';
 
 %% Figure 3: noisy Monte Carlo scatter at a fixed true position
 nTrials = 500;
-levels  = [5000 1000];
 xt = c + 0.3;  yt = c;
 fig3 = figure('Name', 'Centroiders noisy scatter', 'Color', 'w', 'Position', [100 100 1000 850]);
 setLightTheme(fig3);
 tl3 = tiledlayout(nM, numel(levels), 'TileSpacing', 'compact');
-title(tl3, sprintf('Estimates over %d noisy trials (true centroid +0.3 px in x, negPixelRule = %s)', ...
-      nTrials, p0.centroid.negPixelRule));
-fprintf('\nNoisy trials (true x offset +0.3 px, sigma %.1f)\n', p0.psf.sigma_px);
+title(tl3, sprintf('Estimates over %d noisy trials (\\sigma = %.1f px, true centroid +0.3 px in x, negPixelRule = %s)', ...
+      nTrials, sigmaScatter, p0.centroid.negPixelRule));
+fprintf('\nNoisy trials (true x offset +0.3 px, sigma %.1f)\n', sigmaScatter);
 for m = 1:nM
     f = centroiders{m, 1};  name = centroiders{m, 2};
     for j = 1:numel(levels)
-        pj = p0;  pj.star.signal_e = levels(j);
+        pj = p0;  pj.star.signal_e = levels(j);  pj.psf.sigma_px = sigmaScatter;
         est = zeros(nTrials, 2);  st = zeros(nTrials, 1);
         for k = 1:nTrials
             [est(k, 1), est(k, 2), st(k)] = runMethod(f, pj, xt, yt);
@@ -187,7 +198,7 @@ lg.Layout.Tile = 'south';
 
 fprintf('\nAll subtract_background and centroider checks passed.\n');
 
-%% ---- Local functions ------------------------------------------------------
+% ---- Local functions ------------------------------------------------------
 function q = noiseOff(q)
 % Switch every noise source off (flags false, FPN and PRNU values 0).
 q.noise.enableShot  = false;
